@@ -5,7 +5,7 @@ import {googleAI, type GoogleAIPluginParams} from '@genkit-ai/googleai';
 // Store the default configuration.
 const defaultConfig: GenkitOptions = {
     plugins: [googleAI({ apiKey: process.env.GOOGLE_API_KEY })],
-    model: 'googleai/gemini-2.0-flash',
+    model: 'googleai/gemini-2.5-flash',
 };
 
 // Initialize the default AI instance.
@@ -22,7 +22,7 @@ export const ai = genkit(defaultConfig);
 export function getAi(apiKey: string) {
   const userConfig: GenkitOptions = {
     plugins: [googleAI({ apiKey })],
-    model: 'googleai/gemini-2.0-flash',
+    model: 'googleai/gemini-2.5-flash',
   };
   return genkit(userConfig);
 }

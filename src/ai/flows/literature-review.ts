@@ -12,7 +12,8 @@
  */
 
 import { getAi } from '@/ai/genkit';
-import { searchPubMed } from '@/services/pubmed';
+import { searchPubMed, type PubMedArticle } from '@/services/pubmed';
+import { searchScholarlyArticles, type ScholarlyArticle } from '@/services/scholarly';
 import { z } from 'genkit';
 
 const LiteratureReviewInputSchema = z.object({
@@ -77,11 +78,28 @@ Return your final output as a single, valid JSON object with the keys: "introduc
   
   const searchStrategyForPubMed = `(${input.studyTitle}) AND (randomized controlled trial[Publication Type] OR systematic review[Publication Type] OR meta-analysis[Publication Type] OR review[Publication Type] OR cohort study[Publication Type])`;
 
-  // 1. Fetch articles from PubMed
-  const articles = await searchPubMed(searchStrategyForPubMed);
+  // 1. Fetch articles from both PubMed and scholarly search
+  const [pubmedArticles, scholarlyArticles] = await Promise.all([
+    searchPubMed(searchStrategyForPubMed),
+    searchScholarlyArticles(input.studyTitle, input.apiKey, 5) // Get 5 additional articles from scholarly search
+  ]);
+
+  // Combine and normalize articles from both sources
+  const articles = [
+    ...(pubmedArticles || []),
+    ...(scholarlyArticles || []).map(article => ({
+      uid: `s${Math.random().toString(36).slice(2)}`, // Generate a pseudo-uid for scholarly articles
+      title: article.title,
+      authors: [{ name: article.authors }],
+      pubDate: article.year,
+      journal: article.journal,
+      abstract: article.abstract
+    }))
+  ];
+
   if (!articles || articles.length === 0) {
     return {
-        introduction: "No relevant articles were found on PubMed for the given study title. Please try rephrasing your title to be more specific or broader, and then generate this section again.",
+        introduction: "No relevant articles were found for the given study title. Please try rephrasing your title to be more specific or broader, and then generate this section again.",
         keyConcepts: [],
         articles: []
     }
